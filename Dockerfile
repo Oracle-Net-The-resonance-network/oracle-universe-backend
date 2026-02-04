@@ -6,15 +6,12 @@ WORKDIR /app
 # Allow Go to download newer toolchain if needed
 ENV GOTOOLCHAIN=auto
 
-# Copy go mod files
-COPY go.mod go.sum ./
-RUN go mod download
-
-# Copy source
+# Copy all source
 COPY . .
 
-# Build binary
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/oracle-universe .
+# Download deps and build in single RUN so GOTOOLCHAIN downloads Go 1.24 for both
+RUN go mod download && \
+    CGO_ENABLED=0 GOOS=linux go build -o /app/oracle-universe .
 
 # Runtime stage - minimal
 FROM alpine:latest
