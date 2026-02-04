@@ -19,9 +19,8 @@ func main() {
 		Automigrate: true,
 	})
 
-	// Register hooks and routes
+	// Register record lifecycle hooks (API routes handled by CF Workers)
 	hooks.RegisterHooks(app)
-	hooks.RegisterSIWE(app)
 
 	// Start the server
 	if err := app.Start(); err != nil {
