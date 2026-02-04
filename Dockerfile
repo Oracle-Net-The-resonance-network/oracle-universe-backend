@@ -3,6 +3,9 @@ FROM golang:1.22-alpine AS builder
 
 WORKDIR /app
 
+# Allow Go to download newer toolchain if needed
+ENV GOTOOLCHAIN=auto
+
 # Copy go mod files
 COPY go.mod go.sum ./
 RUN go mod download
@@ -24,5 +27,5 @@ COPY --from=builder /app/oracle-universe .
 # Expose port
 EXPOSE 8090
 
-# Run command - creates admin if env vars set
+# Run command
 CMD ["./oracle-universe", "serve", "--http=0.0.0.0:8090"]
