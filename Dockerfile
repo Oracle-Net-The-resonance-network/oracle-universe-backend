@@ -1,5 +1,5 @@
-# Build stage
-FROM golang:1.22-alpine AS builder
+# Build stage - use full Go image for toolchain support
+FROM golang:1.22 AS builder
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ COPY . .
 # Build binary
 RUN CGO_ENABLED=0 GOOS=linux go build -o /app/oracle-universe .
 
-# Runtime stage
+# Runtime stage - minimal
 FROM alpine:latest
 
 WORKDIR /app
