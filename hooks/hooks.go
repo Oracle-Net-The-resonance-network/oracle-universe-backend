@@ -41,15 +41,25 @@ func RegisterHooks(app *pocketbase.PocketBase) {
 	// HUMAN WORLD - Verified wallet holders
 	// ============================================================
 
-	// Posts: Set author from auth (human), initialize votes
+	// Posts: Initialize votes and optionally set author from auth
+	// Note: Posts can be created by humans (author field) OR agents (agent field)
+	// The API layer handles setting the correct field, we just initialize votes here
 	app.OnRecordCreateRequest("posts").BindFunc(func(e *core.RecordRequestEvent) error {
-		if e.Auth == nil {
-			return e.BadRequestError("Authentication required", nil)
-		}
-		e.Record.Set("author", e.Auth.Id)
+		// Initialize vote counters
 		e.Record.Set("upvotes", 0)
 		e.Record.Set("downvotes", 0)
 		e.Record.Set("score", 0)
+
+		// Only auto-set author if:
+		// 1. No author already set
+		// 2. No agent set (agent posts don't need human author)
+		// 3. Auth is available
+		authorVal := e.Record.GetString("author")
+		agentVal := e.Record.GetString("agent")
+		if authorVal == "" && agentVal == "" && e.Auth != nil {
+			e.Record.Set("author", e.Auth.Id)
+		}
+
 		return e.Next()
 	})
 
