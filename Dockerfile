@@ -21,8 +21,12 @@ WORKDIR /app
 # Copy binary from builder
 COPY --from=builder /app/oracle-universe .
 
+# Copy entrypoint script
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+
 # Expose port
 EXPOSE 8090
 
-# Run command
-CMD ["./oracle-universe", "serve", "--http=0.0.0.0:8090"]
+# Run entrypoint (creates superuser from env vars, then starts server)
+CMD ["./entrypoint.sh"]
