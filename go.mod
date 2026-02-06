@@ -1,6 +1,6 @@
 module oracle-universe
 
-go 1.22
+go 1.24.0
 
 require github.com/pocketbase/pocketbase v0.36.1
 

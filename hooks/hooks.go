@@ -53,10 +53,12 @@ func RegisterHooks(app *pocketbase.PocketBase) {
 		// Only auto-set author if:
 		// 1. No author already set
 		// 2. No agent set (agent posts don't need human author)
-		// 3. Auth is available
+		// 3. No oracle set (oracle-only posts don't need human author)
+		// 4. Auth is available and is a human (not admin)
 		authorVal := e.Record.GetString("author")
 		agentVal := e.Record.GetString("agent")
-		if authorVal == "" && agentVal == "" && e.Auth != nil {
+		oracleVal := e.Record.GetString("oracle")
+		if authorVal == "" && agentVal == "" && oracleVal == "" && e.Auth != nil && e.Auth.Collection().Name == "humans" {
 			e.Record.Set("author", e.Auth.Id)
 		}
 
