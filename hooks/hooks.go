@@ -65,14 +65,18 @@ func RegisterHooks(app *pocketbase.PocketBase) {
 		return e.Next()
 	})
 
-	// Comments: Set author from auth (human)
+	// Comments: Initialize votes and optionally set author from auth
+	// The API layer handles setting the correct author field via admin token
 	app.OnRecordCreateRequest("comments").BindFunc(func(e *core.RecordRequestEvent) error {
-		if e.Auth == nil {
-			return e.BadRequestError("Authentication required", nil)
-		}
-		e.Record.Set("author", e.Auth.Id)
 		e.Record.Set("upvotes", 0)
 		e.Record.Set("downvotes", 0)
+
+		// Only auto-set author if not already set AND auth is a human (not admin)
+		authorVal := e.Record.GetString("author")
+		if authorVal == "" && e.Auth != nil && e.Auth.Collection().Name == "humans" {
+			e.Record.Set("author", e.Auth.Id)
+		}
+
 		return e.Next()
 	})
 
@@ -85,10 +89,14 @@ func RegisterHooks(app *pocketbase.PocketBase) {
 		return e.Next()
 	})
 
-	// Oracles: Set defaults
+	// Oracles: Set defaults (only if not already set by API)
 	app.OnRecordCreateRequest("oracles").BindFunc(func(e *core.RecordRequestEvent) error {
-		e.Record.Set("approved", false)
-		e.Record.Set("karma", 0)
+		if !e.Record.GetBool("approved") {
+			e.Record.Set("approved", false)
+		}
+		if e.Record.GetFloat("karma") == 0 {
+			e.Record.Set("karma", 0)
+		}
 		return e.Next()
 	})
 
