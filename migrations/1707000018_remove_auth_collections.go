@@ -12,19 +12,13 @@ func init() {
 		// All auth is SIWE + custom JWT + admin token — PB auth fields unused
 		// ============================================================
 
-		// Remove relations referencing agents/humans from other collections
+		// Drop collections that reference agents (sandbox/dev only)
 		for _, colName := range []string{"sandbox_posts", "agent_heartbeats"} {
 			col, err := app.FindCollectionByNameOrId(colName)
 			if err != nil {
 				continue
 			}
-			col.Fields.RemoveByName("agent")
-			col.Fields.RemoveByName("human")
-			col.DeleteRule = nil
-			col.UpdateRule = nil
-			col.ListRule = nil
-			col.ViewRule = nil
-			if err := app.Save(col); err != nil {
+			if err := app.Delete(col); err != nil {
 				return err
 			}
 		}
