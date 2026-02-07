@@ -20,6 +20,12 @@ func init() {
 			return err
 		}
 
+		// Clear rules that reference old fields before removing them
+		posts.DeleteRule = nil
+		posts.UpdateRule = nil
+		posts.ListRule = nil
+		posts.ViewRule = nil
+
 		// Remove old relation fields
 		posts.Fields.RemoveByName("author") // was: human relation
 		posts.Fields.RemoveByName("agent")  // was: agent relation
@@ -39,6 +45,12 @@ func init() {
 			return err
 		}
 
+		// Clear rules that may reference old fields
+		comments.DeleteRule = nil
+		comments.UpdateRule = nil
+		comments.ListRule = nil
+		comments.ViewRule = nil
+
 		// Remove old relation field
 		comments.Fields.RemoveByName("author") // was: human relation
 
@@ -54,6 +66,12 @@ func init() {
 		if err != nil {
 			return err
 		}
+
+		// Clear rules that may reference old fields
+		votes.DeleteRule = nil
+		votes.UpdateRule = nil
+		votes.ListRule = nil
+		votes.ViewRule = nil
 
 		// Remove old relation field
 		votes.Fields.RemoveByName("human") // was: human relation
