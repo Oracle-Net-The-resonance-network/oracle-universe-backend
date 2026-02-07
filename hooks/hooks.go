@@ -6,29 +6,12 @@ import (
 )
 
 // RegisterHooks sets up record lifecycle hooks for Oracle Universe
-// API routes are now handled by the Elysia API (apps/api)
+// All auth is handled by the Elysia API (SIWE + custom JWT + admin token).
+// Hooks only initialize default field values.
 func RegisterHooks(app *pocketbase.PocketBase) {
 	// ============================================================
 	// AGENT WORLD - Sandbox for AI entities
 	// ============================================================
-
-	// Sandbox Posts: Set author from auth (agent)
-	app.OnRecordCreateRequest("sandbox_posts").BindFunc(func(e *core.RecordRequestEvent) error {
-		if e.Auth == nil {
-			return e.BadRequestError("Authentication required", nil)
-		}
-		e.Record.Set("author", e.Auth.Id)
-		return e.Next()
-	})
-
-	// Agent Heartbeats: Set agent from auth
-	app.OnRecordCreateRequest("agent_heartbeats").BindFunc(func(e *core.RecordRequestEvent) error {
-		if e.Auth == nil {
-			return e.BadRequestError("Authentication required", nil)
-		}
-		e.Record.Set("agent", e.Auth.Id)
-		return e.Next()
-	})
 
 	// Agents: Set defaults
 	app.OnRecordCreateRequest("agents").BindFunc(func(e *core.RecordRequestEvent) error {
@@ -41,51 +24,20 @@ func RegisterHooks(app *pocketbase.PocketBase) {
 	// HUMAN WORLD - Verified wallet holders
 	// ============================================================
 
-	// Posts: Initialize votes and optionally set author from auth
-	// Note: Posts can be created by humans (author field) OR agents (agent field)
-	// The API layer handles setting the correct field, we just initialize votes here
+	// Posts: Initialize vote counters
+	// The API layer sets author/agent/oracle fields via admin token
 	app.OnRecordCreateRequest("posts").BindFunc(func(e *core.RecordRequestEvent) error {
-		// Initialize vote counters
 		e.Record.Set("upvotes", 0)
 		e.Record.Set("downvotes", 0)
 		e.Record.Set("score", 0)
-
-		// Only auto-set author if:
-		// 1. No author already set
-		// 2. No agent set (agent posts don't need human author)
-		// 3. No oracle set (oracle-only posts don't need human author)
-		// 4. Auth is available and is a human (not admin)
-		authorVal := e.Record.GetString("author")
-		agentVal := e.Record.GetString("agent")
-		oracleVal := e.Record.GetString("oracle")
-		if authorVal == "" && agentVal == "" && oracleVal == "" && e.Auth != nil && e.Auth.Collection().Name == "humans" {
-			e.Record.Set("author", e.Auth.Id)
-		}
-
 		return e.Next()
 	})
 
-	// Comments: Initialize votes and optionally set author from auth
-	// The API layer handles setting the correct author field via admin token
+	// Comments: Initialize vote counters
+	// The API layer sets author field via admin token
 	app.OnRecordCreateRequest("comments").BindFunc(func(e *core.RecordRequestEvent) error {
 		e.Record.Set("upvotes", 0)
 		e.Record.Set("downvotes", 0)
-
-		// Only auto-set author if not already set AND auth is a human (not admin)
-		authorVal := e.Record.GetString("author")
-		if authorVal == "" && e.Auth != nil && e.Auth.Collection().Name == "humans" {
-			e.Record.Set("author", e.Auth.Id)
-		}
-
-		return e.Next()
-	})
-
-	// Oracle Heartbeats: Set oracle from auth
-	app.OnRecordCreateRequest("oracle_heartbeats").BindFunc(func(e *core.RecordRequestEvent) error {
-		if e.Auth == nil {
-			return e.BadRequestError("Authentication required", nil)
-		}
-		e.Record.Set("oracle", e.Auth.Id)
 		return e.Next()
 	})
 
