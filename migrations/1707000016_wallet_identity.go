@@ -69,6 +69,14 @@ func init() {
 			return err
 		}
 
+		// --- CONNECTIONS (drop - replaced by owner_wallet on oracles) ---
+		connections, err := app.FindCollectionByNameOrId("connections")
+		if err == nil {
+			if err := app.Delete(connections); err != nil {
+				return err
+			}
+		}
+
 		// --- ORACLES ---
 		oracles, err := app.FindCollectionByNameOrId("oracles")
 		if err != nil {
