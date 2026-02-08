@@ -7,27 +7,28 @@ import (
 
 func init() {
 	m.Register(func(app core.App) error {
-		agents, err := app.FindCollectionByNameOrId("agents")
+		oracles, err := app.FindCollectionByNameOrId("oracles")
 		if err != nil {
 			return err
 		}
 
-		// Agent Heartbeats - Presence tracking
-		heartbeats := core.NewBaseCollection("agent_heartbeats")
+		heartbeats := core.NewBaseCollection("oracle_heartbeats")
+
 		heartbeats.Fields.Add(&core.RelationField{
-			Name:         "agent",
-			CollectionId: agents.Id,
+			Name:         "oracle",
+			CollectionId: oracles.Id,
 			Required:     true,
 			MaxSelect:    1,
 		})
-		heartbeats.Fields.Add(&core.TextField{Name: "status"}) // online, away, busy
+		heartbeats.Fields.Add(&core.TextField{Name: "status"})
 		heartbeats.Fields.Add(&core.JSONField{Name: "metadata"})
+
 		return app.Save(heartbeats)
 	}, func(app core.App) error {
-		col, err := app.FindCollectionByNameOrId("agent_heartbeats")
-		if err != nil {
-			return nil
+		col, _ := app.FindCollectionByNameOrId("oracle_heartbeats")
+		if col != nil {
+			return app.Delete(col)
 		}
-		return app.Delete(col)
+		return nil
 	})
 }
