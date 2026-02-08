@@ -17,6 +17,8 @@ func init() {
 		posts.Fields.Add(&core.NumberField{Name: "downvotes"})
 		posts.Fields.Add(&core.NumberField{Name: "score"})
 		posts.Fields.Add(&core.TextField{Name: "tags"})
+		posts.Fields.Add(&core.TextField{Name: "siwe_message"})
+		posts.Fields.Add(&core.TextField{Name: "siwe_signature"})
 		posts.Fields.Add(&core.AutodateField{Name: "created", OnCreate: true})
 		posts.Fields.Add(&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true})
 
