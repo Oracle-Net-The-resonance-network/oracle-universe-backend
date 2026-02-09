@@ -98,15 +98,9 @@ func RegisterHooks(app *pocketbase.PocketBase) {
 				return
 			}
 
-			// Helper: create notification with self-suppression
+			// Helper: create notification with self-suppression (same wallet only)
 			notify := func(recipient string) {
 				if recipient == "" || recipient == actorWallet {
-					return
-				}
-				// Suppress if actor is a bot owned by recipient
-				bots, _ := app.FindRecordsByFilter("oracles",
-					fmt.Sprintf(`bot_wallet="%s" && owner_wallet="%s"`, actorWallet, recipient), "", 1, 0)
-				if len(bots) > 0 {
 					return
 				}
 
