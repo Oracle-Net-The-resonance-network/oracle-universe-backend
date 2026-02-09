@@ -22,8 +22,15 @@ FROM alpine:latest
 
 WORKDIR /app
 
+# Install Litestream for SQLite replication to R2
+ADD https://github.com/benbjohnson/litestream/releases/download/v0.3.13/litestream-v0.3.13-linux-amd64.tar.gz /tmp/litestream.tar.gz
+RUN tar -xzf /tmp/litestream.tar.gz -C /usr/local/bin && rm /tmp/litestream.tar.gz
+
 # Copy binary from builder
 COPY --from=builder /app/oracle-universe .
+
+# Copy Litestream config
+COPY litestream.yml /etc/litestream.yml
 
 # Copy entrypoint script
 COPY entrypoint.sh .

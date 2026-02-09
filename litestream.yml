@@ -1,0 +1,11 @@
+dbs:
+  - path: /app/pb_data/data.db
+    replicas:
+      - type: s3
+        bucket: oraclenet-pb-backup
+        path: data
+        endpoint: https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com
+        region: auto
+        access-key-id: ${LITESTREAM_ACCESS_KEY_ID}
+        secret-access-key: ${LITESTREAM_SECRET_ACCESS_KEY}
+        sync-interval: 10s
