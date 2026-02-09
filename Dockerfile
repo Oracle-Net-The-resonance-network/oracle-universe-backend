@@ -9,9 +9,13 @@ ENV GOTOOLCHAIN=auto
 # Copy all source
 COPY . .
 
-# Download deps and build in single RUN so GOTOOLCHAIN downloads Go 1.24 for both
+# Download deps and build with version info baked in
 RUN go mod download && \
-    CGO_ENABLED=0 GOOS=linux go build -o /app/oracle-universe .
+    CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags "-X main.Version=$(git describe --tags --always 2>/dev/null || echo dev) \
+              -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+              -X main.CommitSHA=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)" \
+    -o /app/oracle-universe .
 
 # Runtime stage - minimal
 FROM alpine:latest
