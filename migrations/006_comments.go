@@ -25,6 +25,8 @@ func init() {
 		comments.Fields.Add(&core.TextField{Name: "parent_id"})
 		comments.Fields.Add(&core.NumberField{Name: "upvotes"})
 		comments.Fields.Add(&core.NumberField{Name: "downvotes"})
+		comments.Fields.Add(&core.TextField{Name: "siwe_message"})
+		comments.Fields.Add(&core.TextField{Name: "siwe_signature"})
 		comments.Fields.Add(&core.AutodateField{Name: "created", OnCreate: true})
 		comments.Fields.Add(&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true})
 
