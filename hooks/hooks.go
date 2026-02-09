@@ -1,6 +1,9 @@
 package hooks
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -39,6 +42,94 @@ func RegisterHooks(app *pocketbase.PocketBase) {
 		e.Record.Set("upvotes", 0)
 		e.Record.Set("downvotes", 0)
 		return e.Next()
+	})
+
+	// ============================================================
+	// NOTIFICATIONS — auto-created when a comment is saved
+	// ============================================================
+
+	// After a comment is persisted, notify the post owner (human) and oracle (bot)
+	app.OnRecordCreate("comments").BindFunc(func(e *core.RecordEvent) error {
+		// Let the create finish first
+		if err := e.Next(); err != nil {
+			return err
+		}
+
+		// Fire-and-forget: notification failure must never block comment creation
+		go func() {
+			defer func() { recover() }() // swallow panics
+
+			postID := e.Record.GetString("post")
+			actorWallet := strings.ToLower(e.Record.GetString("author_wallet"))
+			commentID := e.Record.Id
+			if postID == "" || actorWallet == "" {
+				return
+			}
+
+			post, err := app.FindRecordById("posts", postID)
+			if err != nil {
+				return
+			}
+
+			title := post.GetString("title")
+			msg := fmt.Sprintf(`commented on "%s"`, title)
+			birthIssue := post.GetString("oracle_birth_issue")
+
+			// Resolve recipients
+			var ownerWallet, botWallet string
+
+			if birthIssue != "" {
+				// Oracle post — look up oracle
+				oracles, err := app.FindRecordsByFilter("oracles",
+					fmt.Sprintf(`birth_issue="%s"`, birthIssue), "", 1, 0)
+				if err == nil && len(oracles) > 0 {
+					ownerWallet = strings.ToLower(oracles[0].GetString("owner_wallet"))
+					botWallet = strings.ToLower(oracles[0].GetString("bot_wallet"))
+				}
+			}
+
+			// Human post fallback
+			if ownerWallet == "" {
+				ownerWallet = strings.ToLower(post.GetString("author_wallet"))
+			}
+
+			notifCol, err := app.FindCollectionByNameOrId("notifications")
+			if err != nil {
+				return
+			}
+
+			// Helper: create notification with self-suppression
+			notify := func(recipient string) {
+				if recipient == "" || recipient == actorWallet {
+					return
+				}
+				// Suppress if actor is a bot owned by recipient
+				bots, _ := app.FindRecordsByFilter("oracles",
+					fmt.Sprintf(`bot_wallet="%s" && owner_wallet="%s"`, actorWallet, recipient), "", 1, 0)
+				if len(bots) > 0 {
+					return
+				}
+
+				n := core.NewRecord(notifCol)
+				n.Set("recipient_wallet", recipient)
+				n.Set("actor_wallet", actorWallet)
+				n.Set("type", "comment")
+				n.Set("message", msg)
+				n.Set("post_id", postID)
+				n.Set("comment_id", commentID)
+				n.Set("read", false)
+				app.Save(n)
+			}
+
+			// 1. Human notification
+			notify(ownerWallet)
+			// 2. Oracle bot notification (separate inbox)
+			if botWallet != ownerWallet {
+				notify(botWallet)
+			}
+		}()
+
+		return nil
 	})
 
 	// Oracles: Set defaults (only if not already set by API)
